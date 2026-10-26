@@ -1,0 +1,70 @@
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readdir, readFile, stat, mkdir, writeFile } from 'node:fs/promises'
+import { resolve, dirname, join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const dist = join(root, 'dist')
+const base = '/experiments/the-counter/'
+const game = resolve(root, '../the-counter/dist')
+const files = []
+async function walk(directory) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    assert(!entry.isSymbolicLink(), `Symlink in build: ${entry.name}`)
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) await walk(path)
+    else files.push(relative(dist, path).split(sep).join('/'))
+  }
+}
+await walk(dist)
+assert(files.length > 20, 'Build is missing runtime assets')
+const foundation = ['index.html', 'experiments/index.html', '404.html', 'site.css', '_headers']
+for (const file of files) {
+  assert(foundation.includes(file) || /^experiments\/the-counter\/(index\.html|favicon\.svg|(?:assets|art|audio)\/.+)$/.test(file), `Unexpected build file: ${file}`)
+  assert(!/(?:^|\/)(?:\.env.*|\.git|pilot-responses|docs|server|src|node_modules)(?:\/|$)|\.(?:map|zip|json|ts|tsx|mjs|pem|key)$/.test(file), `Non-runtime file: ${file}`)
+}
+for (const required of foundation) assert(files.includes(required), `Missing ${required}`)
+
+async function localReference(reference, source) {
+  if (/^(?:https?:|data:|blob:|mailto:|#)/i.test(reference)) return
+  const url = new URL(reference, 'https://local.invalid/' + source)
+  let file = decodeURIComponent(url.pathname).replace(/^\//, '')
+  if (!file || file.endsWith('/')) file += 'index.html'
+  assert(files.includes(file), `Broken reference ${reference} in ${source}`)
+}
+for (const file of files.filter(file => /\.(html|css)$/.test(file))) {
+  const content = await readFile(join(dist, file), 'utf8')
+  for (const match of content.matchAll(/(?:href|src)=["']([^"']+)["']/g)) await localReference(match[1], file)
+  for (const match of content.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)'";]*))\s*\)/g)) await localReference(match[1] ?? match[2] ?? match[3], file)
+}
+const html = await readFile(join(dist, base.slice(1), 'index.html'), 'utf8')
+const bundledReferences = [...html.matchAll(/(?:href|src)=["']([^"']+)["']/g)].map(match => match[1])
+assert(bundledReferences.length >= 3, 'Missing game entry assets')
+assert(bundledReferences.every(path => path.startsWith(base)), 'Game entry points escape its subdirectory')
+const js = files.filter(file => file.startsWith(base.slice(1) + 'assets/') && file.endsWith('.js'))
+assert(js.length > 0, 'Missing compiled application')
+const compiled = (await Promise.all(js.map(file => readFile(join(dist, file), 'utf8')))).join('\n')
+assert(compiled.includes(base), 'Missing dynamic asset base')
+assert(compiled.includes('/experiments/'), 'Missing return navigation')
+
+const manifest = []
+for (const file of files.sort()) {
+  const path = join(dist, file)
+  const buffer = await readFile(path)
+  if (file.startsWith(base.slice(1))) {
+    const source = await readFile(join(game, file.slice(base.length - 1)))
+    assert(buffer.equals(source), `Copied runtime differs from independent game build: ${file}`)
+  }
+  assert((await stat(path)).size <= 25 * 1024 * 1024, `Asset exceeds 25 MiB: ${file}`)
+  manifest.push({ path: file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex') })
+}
+const config = JSON.parse(await readFile(join(root, 'wrangler.jsonc'), 'utf8'))
+assert.equal(config.workers_dev, false)
+assert.equal(config.preview_urls, false)
+assert(!config.routes && !config.route && !config.main && !config.account_id, 'Unexpected deployment target or backend')
+assert.equal(config.assets.not_found_handling, '404-page')
+await mkdir(join(root, 'release'), { recursive: true })
+await writeFile(join(root, 'release/manifest.json'), JSON.stringify({ build: 'local-preview', totalFiles: manifest.length, totalBytes: manifest.reduce((sum, file) => sum + file.bytes, 0), files: manifest }, null, 2) + '\n')
+console.log(`PASS: ${manifest.length} runtime files; internal links, nested assets, copy integrity, size limits and local-only configuration checked.`)
+console.log('Wrote release/manifest.json. No response data or source files are present in dist.')
