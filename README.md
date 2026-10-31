@@ -4,7 +4,13 @@ A small static website for writing and interactive experiments, hosted with Clou
 
 **[markmathew.com](https://markmathew.com/)** · **[The Counter](https://markmathew.com/experiments/the-counter/)**
 
-![The homepage](docs/preview.png)
+The editorial desktop homepage uses Newsreader and IBM Plex Sans, an interactive artwork gallery, selected projects, and a directory with hover/focus previews. [Implementation and artwork notes](docs/editorial-desktop.md).
+
+![Editorial desktop browser preview](docs/editorial-desktop-preview.jpg)
+
+[Desktop validation](docs/editorial-desktop-qa.md)
+
+The earlier homepage is preserved in [the original preview](docs/preview.png).
 
 ## Local development
 
@@ -29,7 +35,7 @@ To test the game itself, run `npm test` and `npm run lint` in the sibling `the-c
 
 ## Structure
 
-- `site/`: homepage, experiment directory, shared CSS, headers and 404 page.
+- `site/`: homepage, About and study previews, public-profile Connect page, experiment directory, headers and 404 page. The homepage uses `home.css`/`home.js`; the existing experiment pages retain `site.css`.
 - `scripts/build.mjs`: builds the independent game for `/experiments/the-counter/` and copies only its runtime into `dist/`.
 - `scripts/check.mjs`: checks internal references, copy integrity, allowed runtime files and size limits; writes an ignored release manifest.
 - `wrangler.jsonc`: local static preview configuration.
