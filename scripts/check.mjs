@@ -20,15 +20,32 @@ async function walk(directory) {
 await walk(dist)
 assert(files.length > 20, 'Build is missing runtime assets')
 const foundation = ['index.html', 'experiments/index.html', '404.html', 'site.css', '_headers', 'home.css', 'home.js', 'about/index.html', 'connect/index.html', 'studies/research/index.html', 'studies/design-tool/index.html']
+const portfolio = [
+  '_redirects', 'robots.txt', 'sitemap.xml', 'site-motion.js',
+  'about.css', 'hubs.css', 'projects.css', 'afterimage-essay.css', 'cosmoture-essay.css',
+  'lexography-essay.css', 'naraeology-essay.css',
+  'archive/index.html', 'archive/visual-studies/studies.css', 'thoughts/index.html', 'wip/index.html',
+  ...['beetle-juice', 'breathe', 'disaster-response', 'eat', 'golden-moth', 'iris', 'stax', 'visual-studies']
+    .map(slug => 'archive/' + slug + '/index.html'),
+  ...['afterimage', 'cosmoture', 'lexography', 'naraeology'].map(slug => 'wip/' + slug + '/index.html'),
+  ...['cosmoture', 'naraeology'].map(slug => 'experiments/' + slug + '/index.html'),
+  'assets/homepage/gallery-atlas.png', 'assets/homepage/designing-possibilities.jpg',
+  ...['afterimage', 'cosmoture', 'lexography', 'lexography-colored-map', 'naraeology', 'the-counter']
+    .map(slug => 'assets/homepage/gallery/' + slug + '.jpg'),
+  'assets/vendor/anime-4.5.0.min.js', 'assets/vendor/anime-4.5.0-LICENSE.txt',
+]
+const portfolioArtwork = /^assets\/(?:archive|projects|writing)\/(?:[\w-]+\/)*[\w-]+\.(?:jpg|png|svg|webp)$/
 const homepageAssets = [
   ...['landscape.png', 'data.png', 'portal.png', 'lexography-card.png', 'energy.png', 'lexography-feature.png', 'research.png', 'design-tool.png', 'status-dot.svg', 'arrow-wip.svg', 'arrow-external.svg', 'preview-wip.png', 'preview-experiments.png', 'preview-thoughts.png', 'preview-archive.png', 'research-detail.svg', 'design-tool-detail.svg'].map(file => 'assets/homepage/' + file),
   ...['newsreader-semibold.woff2', 'newsreader-italic.woff2', 'ibm-plex-sans-regular.woff2', 'ibm-plex-sans-medium.woff2', 'Newsreader-OFL.txt', 'IBM-Plex-Sans-OFL.txt'].map(file => 'assets/fonts/' + file),
 ]
 for (const file of files) {
-  assert(foundation.includes(file) || homepageAssets.includes(file) || /^experiments\/the-counter\/(index\.html|favicon\.svg|(?:assets|art|audio)\/.+)$/.test(file), `Unexpected build file: ${file}`)
+  assert(foundation.includes(file) || portfolio.includes(file) || homepageAssets.includes(file) ||
+    portfolioArtwork.test(file) || /^experiments\/the-counter\/(index\.html|favicon\.svg|(?:assets|art|audio)\/.+)$/.test(file),
+  `Unexpected build file: ${file}`)
   assert(!/(?:^|\/)(?:\.env.*|\.git|pilot-responses|docs|server|src|node_modules)(?:\/|$)|\.(?:map|zip|json|ts|tsx|mjs|pem|key)$/.test(file), `Non-runtime file: ${file}`)
 }
-for (const required of [...foundation, ...homepageAssets]) {
+for (const required of [...foundation, ...portfolio, ...homepageAssets]) {
   assert(files.includes(required), `Missing ${required}`)
   assert((await stat(join(dist, required))).size > 0, `Empty runtime file: ${required}`)
 }

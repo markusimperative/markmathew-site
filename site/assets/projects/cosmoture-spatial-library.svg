@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="680" viewBox="0 0 1600 680">
+  <defs>
+    <pattern id="field" width="29" height="29" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#91b6bf" opacity=".32"/>
+    </pattern>
+    <g id="record">
+      <circle r="80" fill="#111b22" stroke="currentColor" stroke-width="1.6"/>
+      <g fill="none" stroke="currentColor" stroke-opacity=".48">
+        <circle r="72"/><circle r="67"/><circle r="61"/><circle r="56"/>
+        <circle r="50"/><circle r="45"/><circle r="39"/><circle r="34"/>
+      </g>
+      <circle r="26" fill="currentColor"/>
+      <circle r="4" fill="#111b22"/>
+    </g>
+    <g id="signal">
+      <circle r="15" fill="none" stroke="currentColor" stroke-opacity=".48"/>
+      <circle r="5" fill="currentColor"/>
+    </g>
+  </defs>
+  <rect width="1600" height="680" fill="#111b22"/>
+  <rect x="35" y="35" width="1530" height="610" fill="url(#field)" stroke="#5a7581" stroke-opacity=".57"/>
+  <g transform="translate(790 340) rotate(-14)" fill="none" stroke="#5a7581">
+    <ellipse rx="709" ry="209" stroke-opacity=".48"/>
+    <ellipse rx="624" ry="180" stroke-opacity=".51"/>
+    <ellipse rx="538" ry="151" stroke-opacity=".61"/>
+    <ellipse rx="450" ry="122" stroke-opacity=".66"/>
+    <ellipse rx="348" ry="92" stroke-opacity=".69"/>
+    <ellipse rx="246" ry="63" stroke-opacity=".8"/>
+    <path d="M-740 0h1480M0-235v470" stroke-opacity=".48" stroke-dasharray="4 10"/>
+  </g>
+  <g fill="none" stroke-width="1.5">
+    <path d="M268 456Q521 444 756 329T1274 166M403 253Q562 293 756 329T1161 417M756 329Q961 310 1072 218" stroke="#93c6ce" stroke-opacity=".57"/>
+    <path d="M111 402Q331 544 548 476T978 483Q1233 484 1431 346M548 476Q724 572 915 573" stroke="#e3ab75" stroke-opacity=".48" stroke-dasharray="5 8"/>
+  </g>
+  <g color="#8cc3cc">
+    <use href="#signal" x="111" y="402"/><use href="#signal" x="1072" y="218"/>
+    <use href="#signal" x="1431" y="346"/><use href="#signal" x="1274" y="166"/>
+    <use href="#signal" x="915" y="573"/><use href="#signal" x="193" y="277"/>
+    <use href="#signal" x="1235" y="496"/><use href="#signal" x="574" y="175"/>
+  </g>
+  <g color="#b69ee0">
+    <use href="#record" transform="translate(403 253) rotate(-19) scale(.72 .54)"/>
+    <use href="#record" transform="translate(1161 417) rotate(-19) scale(.78 .6)"/>
+  </g>
+  <g color="#8cc3cc">
+    <use href="#record" transform="translate(268 456) rotate(-19) scale(.79 .59)"/>
+    <use href="#record" transform="translate(1274 166) rotate(-19) scale(.5 .38)"/>
+    <use href="#record" transform="translate(978 483) rotate(-19) scale(.62 .46)"/>
+  </g>
+  <g color="#e5ab75">
+    <use href="#record" transform="translate(548 476) rotate(-19) scale(.52 .39)"/>
+    <ellipse cx="756" cy="329" rx="180" ry="134" transform="rotate(-19 756 329)" fill="none" stroke="currentColor" stroke-opacity=".56" stroke-width="1.5"/>
+    <ellipse cx="756" cy="329" rx="194" ry="149" transform="rotate(-19 756 329)" fill="none" stroke="currentColor" stroke-opacity=".32" stroke-dasharray="3 8"/>
+    <use href="#record" transform="translate(756 329) rotate(-19) scale(2 1.5)"/>
+  </g>
+  <g fill="none" stroke="#91b6bf" stroke-opacity=".72">
+    <path d="M68 108V68h40m1384 0h40v40M68 572v40h40m1384 0h40v-40"/>
+    <path d="M72 576h86m-86 8h56m-56 8h70M1444 584h76m-61 8h61"/>
+  </g>
+</svg>

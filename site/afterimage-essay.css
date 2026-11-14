@@ -1,0 +1,218 @@
+.afterimage-hero .project-cover > img {
+  object-position: center 39%;
+}
+
+.afterimage-spread {
+  display: grid;
+  align-items: start;
+  gap: clamp(24px, calc(3 * var(--site-vw)), 40px) var(--layout-gap);
+}
+
+.afterimage-spread > * {
+  min-width: 0;
+}
+
+.afterimage-deck {
+  margin-block-end: clamp(12px, calc(2 * var(--site-svh)), 24px);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-style: italic;
+  line-height: var(--line-body);
+}
+
+.afterimage-essay {
+  margin-block-start: clamp(20px, calc(3 * var(--site-svh)), 32px);
+}
+
+.afterimage-section {
+  padding-block: clamp(36px, calc(4.5 * var(--site-vw)), 64px);
+  border-block-start: 1px solid var(--rule);
+}
+
+.afterimage-deck + .afterimage-section {
+  padding-block-start: clamp(16px, calc(2.5 * var(--site-svh)), 28px);
+}
+
+.afterimage-reading {
+  max-inline-size: 640px;
+  font-size: clamp(19px, calc(1.55 * var(--site-vw)), 22px);
+  line-height: 1.48;
+}
+
+.afterimage-section h2,
+.afterimage-statement h2 {
+  text-wrap: balance;
+}
+
+.afterimage-reading h2 {
+  margin-block-end: 16px;
+}
+
+.afterimage-reading p + p {
+  margin-block-start: .75em;
+}
+
+.afterimage-explore,
+.afterimage-caption-kind {
+  font-weight: 500;
+}
+
+.afterimage-explore {
+  margin-block-start: 20px;
+  white-space: normal;
+}
+
+.afterimage-figure img {
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.afterimage-frame img {
+  border: 1px solid var(--rule);
+}
+
+.afterimage-figure figcaption,
+.afterimage-board-note,
+.afterimage-statement-note {
+  font-size: var(--text-small);
+  line-height: 1.45;
+  color: var(--body);
+}
+
+.afterimage-figure figcaption {
+  max-inline-size: 68ch;
+  margin-block-start: 10px;
+}
+
+.afterimage-caption-kind {
+  display: block;
+  margin-block-end: 2px;
+  color: var(--ink);
+}
+
+.afterimage-figure figcaption a {
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.afterimage-figure figcaption a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.afterimage-board-views,
+.afterimage-board-response {
+  margin-block-start: clamp(28px, calc(3.5 * var(--site-vw)), 48px);
+}
+
+.afterimage-board-response {
+  align-items: baseline;
+}
+
+.afterimage-board-note {
+  margin-block-end: 12px;
+}
+
+.afterimage-pair {
+  display: grid;
+  gap: 28px var(--layout-gap);
+}
+
+.afterimage-reflection {
+  max-inline-size: 29ch;
+  margin-block-start: 16px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(24px, calc(2.2 * var(--site-vw)), 34px);
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.afterimage-board-response > .afterimage-reflection {
+  margin-block-start: 0;
+}
+
+.afterimage-statement {
+  padding: clamp(24px, calc(4 * var(--site-vw)), 56px);
+  background: var(--hover);
+}
+
+.afterimage-statement-note {
+  margin-block-start: 6px;
+}
+
+.afterimage-statement-copy > :first-child,
+.afterimage-statement-copy > :last-child {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-style: italic;
+  line-height: var(--line-body);
+}
+
+@media (min-width: 700px) {
+  .afterimage-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .afterimage-essay {
+    margin-block-start: calc(var(--project-opening-gap) + 4px);
+  }
+
+  .afterimage-deck {
+    margin-block-end: max(4px, calc(var(--project-opening-gap) - 4px));
+  }
+
+  .afterimage-deck + .afterimage-section {
+    padding-block-start: var(--project-opening-gap);
+  }
+
+  .afterimage-deck + .afterimage-section .afterimage-reading h2 {
+    margin-block-end: 8px;
+  }
+
+  .afterimage-spread {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .afterimage-spread--board-left > .afterimage-reading {
+    grid-area: 1 / 2;
+  }
+
+  .afterimage-spread--board-left > .afterimage-figure {
+    grid-area: 1 / 1;
+  }
+
+  .afterimage-chapter > h2,
+  .afterimage-chapter > div > h2 {
+    max-inline-size: 18ch;
+  }
+}
+
+@media (max-width: 1099px) {
+  .afterimage-chapter {
+    row-gap: 16px;
+  }
+
+  .afterimage-spread--post-right > .afterimage-figure {
+    max-inline-size: 580px;
+  }
+}
+
+@media (max-width: 699px) {
+  .afterimage-hero .project-cover > img {
+    object-position: center 44%;
+  }
+
+  .afterimage-essay {
+    margin-block-start: 16px;
+  }
+}
+
+@media (max-width: 359px) {
+  .afterimage-essay {
+    margin-block-start: 12px;
+  }
+}

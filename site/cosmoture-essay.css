@@ -1,0 +1,257 @@
+.cosmoture-cover > img {
+  block-size: auto;
+  max-block-size: min(760px, calc(55 * var(--site-svh)));
+  aspect-ratio: 2.35;
+  background: #111b22;
+}
+
+.cosmoture-cover figcaption strong,
+.cosmoture-essay figcaption strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.cosmoture-essay + .project-next {
+  margin-block-start: var(--project-story-space);
+}
+
+.cosmoture-essay .story-reading {
+  font-size: clamp(19px, calc(1.65 * var(--site-vw)), var(--text-body));
+  line-height: 1.45;
+}
+
+.cosmoture-essay h2 {
+  text-wrap: balance;
+}
+
+.cosmoture-essay h2 + .cosmoture-state {
+  margin-block-start: 6px;
+}
+
+.cosmoture-state {
+  color: var(--blue);
+  font-size: var(--text-small);
+  font-weight: 500;
+  line-height: var(--line-small);
+}
+
+.cosmoture-photo > img {
+  aspect-ratio: 5 / 4;
+  object-fit: cover;
+  background: var(--hover);
+}
+
+.cosmoture-evidence-sheet {
+  padding: clamp(16px, calc(3 * var(--site-vw)), 48px);
+  background: #f6f4ef;
+}
+
+.cosmoture-evidence-sheet > .title {
+  max-inline-size: 18ch;
+  margin-block-end: 12px;
+  font-size: clamp(25px, calc(2.25 * var(--site-vw)), 36px);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.cosmoture-evidence-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(20px, .55fr) minmax(92px, 1fr);
+  align-items: center;
+  gap: 0 6px;
+  font-size: clamp(16px, calc(1.4 * var(--site-vw)), 21px);
+  line-height: 1.35;
+}
+
+.cosmoture-evidence-flow dl {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  align-self: stretch;
+  margin: 0;
+}
+
+.cosmoture-evidence-flow dl > div {
+  align-content: center;
+  padding-block: 8px;
+}
+
+.cosmoture-evidence-flow dt,
+.cosmoture-evidence-result strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.cosmoture-evidence-flow dd {
+  margin-inline-start: 0;
+}
+
+.cosmoture-evidence-joins {
+  position: relative;
+  align-self: stretch;
+  color: #78877e;
+}
+
+.cosmoture-evidence-joins svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.cosmoture-evidence-result {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.cosmoture-evidence-result > svg {
+  max-inline-size: 100%;
+  color: #3d6a61;
+}
+
+.cosmoture-journey {
+  margin-block-start: var(--project-story-gap);
+}
+
+.cosmoture-steps {
+  display: grid;
+  gap: 24px;
+  list-style: none;
+  padding: 0;
+}
+
+.cosmoture-steps li > svg {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  background: #111b22;
+}
+
+.cosmoture-depth-lines {
+  fill: none;
+  stroke: #445b62;
+}
+
+.cosmoture-neighbour {
+  color: #87a9ae;
+}
+
+.cosmoture-halo,
+.cosmoture-progress,
+.cosmoture-reveal {
+  fill: none;
+  stroke: #efb981;
+}
+
+.cosmoture-halo {
+  stroke-opacity: .65;
+}
+
+.cosmoture-progress {
+  stroke-width: 3;
+}
+
+.cosmoture-reveal {
+  stroke: #b3cdcb;
+  stroke-dasharray: 3 5;
+}
+
+.cosmoture-steps h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-block-start: 12px;
+  color: var(--ink);
+  font-size: var(--text-body);
+  font-weight: 500;
+  line-height: var(--line-body);
+}
+
+.cosmoture-steps h3 > span {
+  color: var(--muted);
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.cosmoture-steps p {
+  margin-block-start: 4px;
+  font-size: clamp(16px, calc(1.4 * var(--site-vw)), 21px);
+  line-height: 1.4;
+}
+
+.cosmoture-essay .cosmoture-journey figcaption {
+  margin-block-start: 20px;
+}
+
+.cosmoture-questions {
+  list-style: none;
+  padding: 0;
+  border-block-start: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(24px, calc(2.15 * var(--site-vw)), 34px);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cosmoture-questions li {
+  padding-block: 14px;
+  border-block-end: 1px solid var(--rule);
+}
+
+@media (min-width: 700px) {
+  .cosmoture-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(12px, calc(1.65 * var(--site-vw)), 28px);
+  }
+}
+
+@media (min-width: 1100px) {
+  .cosmoture-visual-left > .story-reading {
+    grid-area: 1 / 2;
+  }
+
+  .cosmoture-visual-left > .story-figure {
+    grid-area: 1 / 1;
+  }
+
+  .cosmoture-journey-intro > .story-reading {
+    max-inline-size: 740px;
+  }
+}
+
+@media (max-width: 699px) {
+  .cosmoture-cover > img {
+    aspect-ratio: 8 / 5;
+  }
+
+  .cosmoture-heading .project-summary > p {
+    text-wrap: balance;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 699px) {
+  .cosmoture-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 12px;
+  }
+
+  .cosmoture-heading .project-summary {
+    display: contents;
+  }
+
+  .cosmoture-heading .project-summary > p {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: var(--text-small);
+    line-height: var(--line-small);
+  }
+
+  .cosmoture-heading .status {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}

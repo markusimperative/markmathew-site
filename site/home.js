@@ -1,94 +1,542 @@
+import { motionEase, reducedMotion, tween } from './site-motion.js?v=anime-motion-1'
+
 const gallery = document.querySelector('[data-gallery]')
 
 if (gallery) {
-  const cards = [...gallery.querySelectorAll('[data-study]')]
+  const hero = gallery.closest('.hero')
+  const intro = hero.querySelector('.hero-copy')
+  const lead = intro.querySelector('.hero-lead')
+  const introLines = intro.querySelectorAll('.hero-title-line,.hero-lead-line,.hero-explore')
+  const planes = [...gallery.querySelectorAll('[data-plane]')]
   const controls = [...gallery.querySelectorAll('[data-gallery-index]')]
   const caption = gallery.querySelector('[data-gallery-caption]')
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
-  const titles = ['Landscape exploration', 'Data as material', 'Architectural light study', 'Lexography', 'Energy studies']
-  // Exported Figma variant geometry: x, y, width, height on the 1440 × 551.724 stage.
-  const layouts = [
-    [[499.73,0,440.538,552],[964.27,44,375.76,488],[1364.03,64,294.4,480],[34.21,162,209.455,384],[267.67,122,208.062,368]],
-    [[189.79,122,293.692,368],[507.48,0,425.04,552],[956.52,44,299.307,488],[1279.83,64,261.818,480],[-51.32,162,217.108,384]],
-    [[0,161.84,305.287,382.529],[292.41,121.38,283.218,367.816],[560.92,0,338.391,551.724],[912.18,44.14,264.828,485.517],[1169.66,62.53,270.345,478.161]],
-    [[1194.45,64,383.077,480],[.07,162,295.68,384],[319.75,122,225.707,368],[569.45,0,301.091,552],[894.55,44,275.908,488]],
-    [[900.05,44,389.462,488],[1313.51,64,369.6,480],[79.71,162,235.52,384],[339.23,122,200.727,368],[563.95,0,312.092,552]],
-  ]
-  let selected = 2
+  const projectLinks = [...caption.querySelectorAll('a')]
+  const frame = gallery.querySelector('.gallery-selection')
+  const footer = gallery.querySelector('.gallery-footer')
+  // The original reference defines the card outlines and ribbon geometry.
+  const sourceFaces = planes.map(plane => JSON.parse(plane.dataset.face))
+  let selected = Math.max(0, controls.findIndex(control => control.getAttribute('aria-pressed') === 'true'))
+  let selectedCursor = selected
+  let requestedCursor = selectedCursor
+  let pendingProjectHref = null
+  let cycling = false
+  let layoutVersion = 0
+  let dragLayout
+  let gesture
+  let release
+  let galleryTransition
+  let suppressCardClick = false
+  const instances = new Map(planes.map((plane,i) => {
+    plane.dataset.occurrence = String(i)
+    return [i,plane]
+  }))
+  const stage = gallery.querySelector('.gallery-stage')
+  const studyAt = cursor => ((cursor%planes.length)+planes.length)%planes.length
+  const frameWidthNative = 520
+  const selectedWidthLimit = frameWidthNative - 54
+  const frameLeftNative = 803.5 - frameWidthNative/2
 
-  function selectStudy(index, moveFocus = false) {
-    const next = (index + cards.length) % cards.length
-    if (next === selected) {
-      if (moveFocus) controls[next].focus({ preventScroll: true })
-      return
+  const dimensions = planes.map(plane => ({width:Number(plane.style.getPropertyValue('--source-w')),height:Number(plane.style.getPropertyValue('--source-h'))}))
+  const slotHeights = [373,417,655,489,557]
+  const slotTops = [480,382,154,191,94]
+
+  function arrangement(index) {
+    const poses = []
+    for (let i = 0; i < planes.length; i++) {
+      const slot = (i-index+2+planes.length)%planes.length
+      const factor = slotHeights[slot]/dimensions[i].height
+      poses[i] = {slot,factor,width:dimensions[i].width*factor,height:slotHeights[slot],y:slotTops[slot]}
     }
-    const previous = cards.map(card => {
-      card.getAnimations().forEach(animation => animation.cancel())
-      return card.getBoundingClientRect()
-    })
-    selected = next
-    cards.forEach((card, i) => {
-      const [x,y,width,height] = layouts[next][i]
-      for (const [key,value] of Object.entries({x,y,w:width,h:height})) card.style.setProperty(`--card-${key}`, value)
-      card.setAttribute('aria-pressed', String(i === next))
-      controls[i].setAttribute('aria-pressed', String(i === next))
-      controls[i].tabIndex = i === next ? 0 : -1
-    })
-    const current = cards.map(card => card.getBoundingClientRect())
-    if (!reducedMotion.matches) cards.forEach((card,i) => {
-      const before = previous[i], after = current[i]
-      card.animate([
-        { transformOrigin: 'top left', transform: `translate(${before.left-after.left}px,${before.top-after.top}px) scale(${before.width/after.width},${before.height/after.height})` },
-        { transformOrigin: 'top left', transform: 'none' },
-      ], { duration: 260, easing: 'cubic-bezier(.2,.7,.2,1)' })
-    })
-    caption.textContent = titles[next]
-    caption.style.setProperty('--caption-offset', next === 2 ? '10.11px' : '0px')
-    if (moveFocus) controls[next].focus({ preventScroll: true })
+    const leftNear=(index+4)%5,leftFar=(index+3)%5,rightNear=(index+1)%5,rightFar=(index+2)%5
+    const selectedFactor=Math.min(655/dimensions[index].height,selectedWidthLimit/dimensions[index].width)
+    Object.assign(poses[index], {factor:selectedFactor,width:dimensions[index].width*selectedFactor,height:dimensions[index].height*selectedFactor})
+    poses[index].x = 803.5-poses[index].width/2
+    poses[index].y = 809-poses[index].height
+    poses[leftNear].x = poses[index].x-poses[leftNear].width
+    poses[leftFar].x = poses[leftNear].x+28-poses[leftFar].width
+    poses[rightNear].x = poses[index].x+poses[index].width-3
+    poses[rightFar].x = poses[rightNear].x+poses[rightNear].width-43
+    return poses
   }
 
-  cards.forEach((card,i) => card.addEventListener('click', () => selectStudy(i)))
-  controls.forEach((control,i) => control.addEventListener('click', () => selectStudy(i, true)))
-  gallery.addEventListener('keydown', event => {
-    let next
-    if (event.key === 'ArrowRight') next = selected + 1
-    else if (event.key === 'ArrowLeft') next = selected - 1
-    else if (event.key === 'Home') next = 0
-    else if (event.key === 'End') next = cards.length - 1
+  function ribbonPoses(cursor,scale,originX,width,minOccurrence,maxOccurrence) {
+    const poses = new Map()
+    const core = arrangement(studyAt(cursor))
+    core.forEach((pose,study)=>poses.set(cursor+pose.slot-2,{...pose,study}))
+    const overscan = Math.max(240,360*scale)
+    let leftOccurrence=cursor-2,rightOccurrence=cursor+2
+    let left=poses.get(leftOccurrence),right=poses.get(rightOccurrence)
+    while (left.x*scale+originX>-overscan || leftOccurrence>minOccurrence) {
+      const occurrence=--leftOccurrence,study=studyAt(occurrence)
+      const factor=slotHeights[0]/dimensions[study].height
+      const cardWidth=dimensions[study].width*factor
+      left={study,slot:occurrence-cursor+2,factor,width:cardWidth,height:slotHeights[0],x:left.x+28-cardWidth,y:slotTops[0]}
+      poses.set(occurrence,left)
+    }
+    while ((right.x+right.width)*scale+originX<width+overscan || rightOccurrence<maxOccurrence) {
+      const occurrence=++rightOccurrence,study=studyAt(occurrence)
+      const factor=slotHeights[4]/dimensions[study].height
+      const cardWidth=dimensions[study].width*factor
+      right={study,slot:occurrence-cursor+2,factor,width:cardWidth,height:slotHeights[4],x:right.x+right.width-43,y:slotTops[4]}
+      poses.set(occurrence,right)
+    }
+    return poses
+  }
+
+  function leftEdgeAtY(polygon, y) {
+    const intersections=[]
+    polygon.forEach(([x1,y1],i) => {
+      const [x2,y2]=polygon[(i+1)%polygon.length]
+      if (Math.abs(y2-y1)<.001 || y<Math.min(y1,y2) || y>Math.max(y1,y2)) return
+      intersections.push(x1+(x2-x1)*(y-y1)/(y2-y1))
+    })
+    return intersections.length ? Math.min(...intersections) : Infinity
+  }
+
+  function cancelRelease() {
+    const previous = release
+    release = undefined
+    previous?.transition.cancel()
+    return previous
+  }
+
+  function planeFor(occurrence, study) {
+    let plane = instances.get(occurrence)
+    if (!plane) {
+      plane = planes[study].cloneNode(true)
+      plane.removeAttribute('data-plane')
+      plane.dataset.occurrence = String(occurrence)
+      stage.append(plane)
+      instances.set(occurrence, plane)
+    }
+    return plane
+  }
+
+  function renderStudy(index, animate = false, previousCursor = selectedCursor, settleDuration) {
+    const version=++layoutVersion
+    const motionEnabled=animate&&settleDuration!==0&&!reducedMotion.matches
+    const previousTransforms=new Map()
+    if (motionEnabled) {
+      for (const [key,plane] of instances) {
+        const transform=getComputedStyle(plane).transform
+        if (transform==='none') continue
+        const {m41,m42,m11}=new DOMMatrixReadOnly(transform)
+        previousTransforms.set(key,{x:m41,y:m42,factor:m11})
+      }
+    }
+    galleryTransition?.cancel()
+    // The scene uses layout pixels; client rectangles include the site's desktop scale.
+    const zoom = Number(getComputedStyle(document.documentElement).zoom) || 1
+    const scrollTop = scrollY
+    const viewportHeight = innerHeight / zoom
+    const boundsOf = element => {
+      const {left,right,top,bottom,height} = element.getBoundingClientRect()
+      return {left:left/zoom,right:right/zoom,top:(top+scrollTop)/zoom,bottom:(bottom+scrollTop)/zoom,height:height/zoom}
+    }
+    const width = gallery.clientWidth
+    const sceneWidth = Math.max(width, 640)
+    const origin = hero.offsetTop
+    const centerOffset = (width - sceneWidth) / 2
+    const desktop = width >= 1100
+    const footerHeight = boundsOf(footer).height
+    // The link uses the space under the desktop lead. On narrow screens, keep the gallery below it.
+    const copyBottom = boundsOf(desktop ? lead : intro).bottom
+    // Reserve the whole composition, including its caption and controls.
+    // At normal desktop heights it fits one viewport; short windows retain
+    // enough room for the fixed-size introduction instead of clipping the UI.
+    let sceneHeight = desktop ? Math.max(viewportHeight, copyBottom + 400) : viewportHeight
+    let scale = desktop ? Math.min(sceneWidth / 1672, sceneHeight / 940) : sceneWidth / 1672
+    if (desktop && width < 1600) {
+      const titleBottom=boundsOf(intro.querySelector('h1')).bottom
+      scale=Math.min(scale,(sceneHeight-titleBottom-footerHeight-34)/732)
+    }
+    const extraWidth = desktop ? sceneWidth - 1672 * scale : 0
+    let offsetY = desktop ? Math.max(0, sceneHeight - 940 * scale) : Math.max(0, copyBottom + 32 - 154 * scale)
+    if (!desktop) sceneHeight = Math.max(viewportHeight, 940 * scale + offsetY)
+    const fontSize = Math.max(16, Math.min(24,20*scale))
+    const lineHeight = fontSize*1.4
+    const labelPadding = Math.max(12,Math.min(32,16*scale))
+    const bottomSpace = width < 700 ? 24 : 44*scale
+    const frameWidth = frameWidthNative*scale
+    const frameBottomAt = y => Math.max(862*scale+y,817*scale+y+lineHeight+labelPadding)
+    let clearance=0
+    // Solve text clearance and the footer together. Wide selections must not
+    // put the neutral frame or caption underneath the numeric controls.
+    for (let pass=0; pass<2; pass++) {
+      clearance=0
+      if (desktop) {
+        // Use every possible selected face to reserve one stable frame position.
+        const faces=sourceFaces.map((face,i)=>{
+          const factor=Math.min(655/dimensions[i].height,selectedWidthLimit/dimensions[i].width)
+          const xOrigin=803.5-dimensions[i].width*factor/2
+          const yOrigin=809-dimensions[i].height*factor
+          return face.map(([x,y])=>[(xOrigin+x*factor)*scale+centerOffset+extraWidth/2,(yOrigin+y*factor)*scale+offsetY])
+        })
+        for (const line of introLines) {
+          const bounds=boundsOf(line)
+          if (bounds.bottom>174*scale+offsetY && bounds.top<862*scale+offsetY) {
+            clearance=Math.max(clearance,bounds.right+24-(frameLeftNative*scale+centerOffset+extraWidth/2))
+          }
+          for (const y of [bounds.top+2,bounds.bottom-2]) {
+            for (const face of faces) clearance=Math.max(clearance,bounds.right+16-leftEdgeAtY(face,y))
+          }
+        }
+        const frameRight=frameLeftNative*scale+centerOffset+extraWidth/2+clearance+frameWidth
+        const indexLeft=boundsOf(gallery.querySelector('.gallery-index')).left
+        if (frameRight>indexLeft-16) {
+          offsetY-=Math.max(0,frameBottomAt(offsetY)-(sceneHeight-bottomSpace-footerHeight-16))
+        }
+      }
+    }
+    const navBottom=boundsOf(document.querySelector('.main-nav')).bottom
+    const copyLines = desktop ? [...introLines].map(boundsOf) : []
+    hero.style.setProperty('--scene-header-height', `${origin}px`)
+    hero.style.setProperty('--scene-offset-y', `${offsetY}px`)
+    hero.style.setProperty('--scene-excess-x', `${extraWidth}px`)
+    hero.style.setProperty('--scene-bottom', `${bottomSpace}px`)
+    gallery.classList.add('gallery--projected')
+    const originX=centerOffset+extraWidth/2+clearance
+    const existing=[...instances.keys()]
+    const poses=ribbonPoses(selectedCursor,scale,originX,width,Math.min(...existing),Math.max(...existing))
+    const occurrences=[...poses.keys()]
+    const previousPoses=motionEnabled?ribbonPoses(previousCursor,scale,originX,width,Math.min(...occurrences),Math.max(...occurrences)):new Map()
+    const overscan=Math.max(240,360*scale)
+    const footerTop=sceneHeight-bottomSpace-footerHeight
+    function project(pose) {
+      const x=pose.x*scale+originX
+      const cardWidth=pose.width*scale,cardHeight=pose.height*scale
+      let y=desktop&&pose.slot>=4?Math.max(pose.y*scale+offsetY,navBottom+16):pose.y*scale+offsetY
+      if (desktop&&pose.slot<=0) y=Math.min(y,footerTop-16-cardHeight)
+      if (desktop&&pose.slot<2) {
+        for (const bounds of copyLines) {
+          const top=bounds.top-16,bottom=bounds.bottom+16
+          const face=sourceFaces[pose.study].map(([px,py])=>[x+px*pose.factor*scale,y+py*pose.factor*scale])
+          const samples=[top,bottom,...face.map(point=>point[1]).filter(py=>py>=top&&py<=bottom)]
+          const intersects=samples.some(py=>leftEdgeAtY(face,py)<bounds.right+16&&-leftEdgeAtY(face.map(([px,fy])=>[-px,fy]),py)>bounds.left-16)
+          if (intersects) y=Math.max(y,bounds.bottom+24)
+        }
+      }
+      return {x,y,width:cardWidth,factor:pose.factor*scale,transform:`translate(${x}px,${y}px) scale(${pose.factor*scale})`}
+    }
+    dragLayout = {scale,originX,width,zoom,overscan,project}
+    const moving=[],positions=new Map()
+    for (const [occurrence,pose] of poses) {
+      const plane=planeFor(occurrence,pose.study)
+      const position=project(pose)
+      positions.set(occurrence,position)
+      plane.style.zIndex=String(Math.max(1,7-Math.abs(pose.slot-2)))
+      const outside=position.x+position.width<0||position.x>width
+      plane.setAttribute('aria-hidden',String(outside))
+      plane.inert=outside
+      if (motionEnabled) {
+        const from=previousTransforms.get(occurrence)||project(previousPoses.get(occurrence))
+        moving.push({plane,from,to:position})
+      } else plane.style.transform=position.transform
+    }
+    controls.forEach((control,i)=>{
+      control.setAttribute('aria-pressed',String(i===index))
+      control.tabIndex=i===index?0:-1
+    })
+    const frameLeft = frameLeftNative*scale + centerOffset + extraWidth/2 + clearance
+    const frameTop = 174*scale + offsetY
+    const frameBottom = frameBottomAt(offsetY)
+    Object.assign(frame.style, {left:`${frameLeft}px`,top:`${frameTop}px`,width:`${frameWidth}px`,height:`${frameBottom-frameTop}px`})
+    Object.assign(caption.style, {left:`${frameLeft}px`,top:`${frameBottom-labelPadding-lineHeight}px`,width:`${frameWidth}px`,fontSize:`${fontSize}px`,lineHeight:`${lineHeight}px`})
+    projectLinks.forEach((link,i) => link.toggleAttribute('hidden', i !== index))
+    if (width < 700) sceneHeight = Math.max(sceneHeight,frameBottom+24+footerHeight+24)
+    hero.style.setProperty('--scene-height', `${sceneHeight}px`)
+    function prune() {
+      if (version!==layoutVersion) return
+      for (const [occurrence,plane] of instances) {
+        const position=positions.get(occurrence)
+        if (!position || position.x+position.width<-overscan || position.x>width+overscan) {
+          plane.remove()
+          instances.delete(occurrence)
+        }
+      }
+    }
+    if (!motionEnabled) {
+      prune()
+      return Promise.resolve()
+    }
+    const duration=settleDuration??Math.min(540,340+Math.max(0,Math.abs(selectedCursor-previousCursor)-1)*42)
+    galleryTransition = tween({
+      duration,
+      update:progress => moving.forEach(({plane,from,to}) => paintCard(plane,from,to,progress))
+    })
+    return galleryTransition.finished.then(prune)
+  }
+
+  function paintCard(plane,from,to,progress) {
+    const x=from.x+(to.x-from.x)*progress
+    const y=from.y+(to.y-from.y)*progress
+    const factor=from.factor+(to.factor-from.factor)*progress
+    plane.style.transform=`translate(${x}px,${y}px) scale(${factor})`
+  }
+
+  function runSelection(nextCursor, settleDuration) {
+    const previousCursor=selectedCursor
+    selectedCursor=nextCursor
+    selected=studyAt(selectedCursor)
+    cycling=true
+    gallery.setAttribute('aria-busy','true')
+    renderStudy(selected,true,previousCursor,settleDuration).then(()=>{
+      cycling=false
+      if (requestedCursor!==selectedCursor) {
+        runSelection(requestedCursor)
+        return
+      }
+      gallery.setAttribute('aria-busy','false')
+      if (pendingProjectHref) {
+        const href = pendingProjectHref
+        pendingProjectHref = null
+        location.assign(href)
+      }
+    })
+  }
+
+  function selectOccurrence(cursor,moveFocus=false,projectHref=null) {
+    if (gesture?.tracks) return
+    const interrupted = cancelRelease()
+    requestedCursor=cursor
+    pendingProjectHref=projectHref
+    if (moveFocus) controls[studyAt(cursor)].focus({preventScroll:true})
+    if (!cycling&&(interrupted||requestedCursor!==selectedCursor)) runSelection(requestedCursor)
+  }
+
+  function selectStudy(index,moveFocus=false) {
+    const forward=(index-studyAt(requestedCursor)+planes.length)%planes.length
+    const delta=forward<=planes.length/2?forward:forward-planes.length
+    selectOccurrence(requestedCursor+delta,moveFocus)
+  }
+
+  function prepareDrag(drag) {
+    const {scale,originX,width,zoom,project} = dragLayout
+    const occurrences = [...instances.keys()]
+    const first = Math.min(drag.anchor,...occurrences)
+    const last = Math.max(drag.anchor,...occurrences)
+    drag.posesAt = cursor => new Map(
+      [...ribbonPoses(cursor,scale,originX,width,first,last)].map(([occurrence,pose]) => [occurrence,project(pose)])
+    )
+    const rest = {cursor:selectedCursor,distance:0,poses:drag.posesAt(selectedCursor)}
+    return [[rest],[rest]]
+  }
+
+  function dragSegment(drag, offset) {
+    const direction = offset > 0 ? -1 : 1
+    const stops = drag.tracks[direction === -1 ? 0 : 1]
+    const distance = Math.abs(offset)
+    // Measure each step at the point the visitor grabbed, even as the artwork scales.
+    const anchorX = poses => {
+      const pose = poses.get(drag.anchor)
+      return pose.x + pose.width*drag.anchorFraction
+    }
+    while (stops.length === 1 || stops.at(-1).distance < distance) {
+      const previous = stops.at(-1)
+      const cursor = previous.cursor + direction
+      const poses = drag.posesAt(cursor)
+      const step = (anchorX(previous.poses)-anchorX(poses))*direction*dragLayout.zoom
+      stops.push({cursor,distance:previous.distance+Math.max(24,step),poses})
+    }
+    const index = stops.findIndex(stop => stop.distance >= distance)
+    const end = stops[Math.max(1,index)]
+    const start = stops[Math.max(0,index-1)]
+    const progress = (distance-start.distance)/(end.distance-start.distance)
+    return {start,end,progress,direction}
+  }
+
+  function paintDrag(drag, offset=drag.lastX-drag.startX) {
+    const {width,overscan} = dragLayout
+    const segment = dragSegment(drag,offset)
+    const {start,end,progress} = segment
+    const between = (from,to) => from+(to-from)*progress
+    const front = progress < .5 ? start.cursor : end.cursor
+    const visible = new Set()
+    for (const [occurrence,from] of start.poses) {
+      const to = end.poses.get(occurrence)
+      if (!to) continue
+      const x = between(from.x,to.x)
+      const cardWidth = between(from.width,to.width)
+      if (x+cardWidth < -overscan || x > width+overscan) continue
+      const plane = planeFor(occurrence,studyAt(occurrence))
+      paintCard(plane,from,to,progress)
+      plane.style.zIndex = String(Math.max(1,7-Math.abs(occurrence-front)))
+      const outside = x+cardWidth < 0 || x > width
+      if (plane.inert !== outside) {
+        plane.inert = outside
+        plane.setAttribute('aria-hidden',String(outside))
+      }
+      visible.add(occurrence)
+    }
+    for (const [occurrence,plane] of instances) {
+      if (visible.has(occurrence)) continue
+      plane.remove()
+      instances.delete(occurrence)
+    }
+    return segment
+  }
+
+  function queueDragPaint(drag) {
+    if (drag.frame !== undefined) return
+    drag.frame = requestAnimationFrame(() => {
+      drag.frame = undefined
+      if (gesture === drag) paintDrag(drag)
+    })
+  }
+
+  function recordDragPosition(drag,event) {
+    drag.lastX = event.clientX
+    drag.samples.push({x:event.clientX,time:event.timeStamp})
+    while (drag.samples.length > 1 && event.timeStamp-drag.samples[0].time > 100) {
+      drag.samples.shift()
+    }
+  }
+
+  stage.addEventListener('pointerdown', event => {
+    if (gesture || !event.isPrimary || event.button !== 0) return
+    suppressCardClick = false
+    if (cycling || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+    const plane = event.target.closest('[data-occurrence]')
+    const box = plane?.getBoundingClientRect()
+    gesture = {
+      id:event.pointerId,
+      anchor:plane ? Number(plane.dataset.occurrence) : selectedCursor,
+      anchorFraction:box?.width ? (event.clientX-box.left)/box.width : .5,
+      pressX:event.clientX,
+      startX:event.clientX,
+      startY:event.clientY,
+      samples:[]
+    }
+    recordDragPosition(gesture,event)
+  })
+
+  addEventListener('pointermove', event => {
+    if (event.pointerId !== gesture?.id) return
+    if (event.pointerType === 'mouse' && !(event.buttons & 1)) {
+      finishDrag(event)
+      return
+    }
+    const drag = gesture
+    if (!drag.tracks) {
+      const x = Math.abs(event.clientX - drag.pressX)
+      const y = Math.abs(event.clientY - drag.startY)
+      if (Math.max(x,y) < (event.pointerType === 'mouse' ? 5 : 8)) return
+      if (y >= x || cycling) {
+        gesture = null
+        return
+      }
+      const interrupted = cancelRelease()
+      if (interrupted) {
+        // Resume from the exact point on the ribbon where the release stopped.
+        const previous = interrupted.drag
+        drag.tracks = previous.tracks
+        drag.posesAt = previous.posesAt
+        drag.anchor = previous.anchor
+        drag.anchorFraction = previous.anchorFraction
+        drag.startX = drag.pressX-interrupted.offset
+      } else drag.tracks = prepareDrag(drag)
+      suppressCardClick = true
+      stage.setPointerCapture(event.pointerId)
+      stage.classList.add('gallery-stage--dragging')
+    }
+    recordDragPosition(drag,event)
+    queueDragPaint(drag)
+  })
+
+  function finishDrag(event) {
+    if (event.pointerId !== gesture?.id) return
+    const drag = gesture
+    gesture = null
+    if (!drag.tracks) return
+    if (drag.frame !== undefined) cancelAnimationFrame(drag.frame)
+    stage.classList.remove('gallery-stage--dragging')
+    const released = event.type === 'pointerup'
+    if (released) recordDragPosition(drag,event)
+    const offset = drag.lastX-drag.startX
+    const {start,end} = paintDrag(drag)
+    const sample = drag.samples[0]
+    const elapsed = event.timeStamp-sample.time
+    const velocity = released && elapsed > 0 ? (drag.lastX-sample.x)/elapsed : 0
+    const maxGlide = (end.distance-start.distance)*.85
+    const glide = Math.abs(offset) > 16 ? Math.max(-maxGlide,Math.min(maxGlide,velocity*160)) : 0
+    const target = dragSegment(drag,offset+glide)
+    const stop = target.progress < .5 ? target.start : target.end
+    requestedCursor = released ? stop.cursor : selectedCursor
+    const destination = released ? -stop.distance*target.direction : 0
+    const remaining = Math.abs(offset-destination)
+    const duration = remaining < 1 ? 0 : Math.min(345,125+remaining/(.85+Math.abs(velocity)))
+    pendingProjectHref = null
+    if (reducedMotion.matches || duration === 0) {
+      runSelection(requestedCursor,0)
+      return
+    }
+    gallery.setAttribute('aria-busy','true')
+    const settling = {drag,offset}
+    release = settling
+    settling.transition = tween({
+      from:offset,to:destination,duration,ease:motionEase.release,
+      update:value => {
+        settling.offset = value
+        paintDrag(drag,value)
+      }
+    })
+    settling.transition.finished.then(() => {
+      if (release !== settling) return
+      release = undefined
+      runSelection(requestedCursor,0)
+    })
+  }
+
+  addEventListener('pointerup', finishDrag)
+  addEventListener('pointercancel', finishDrag)
+  stage.addEventListener('lostpointercapture', event => {
+    // Touch may transfer implicit capture from the card to the stage.
+    if (event.target === stage) finishDrag(event)
+  })
+  stage.addEventListener('dragstart', event => event.preventDefault())
+  stage.addEventListener('click',event=>{
+    if (suppressCardClick && event.detail > 0) {
+      event.preventDefault()
+      suppressCardClick = false
+      return
+    }
+    const link = event.target.closest('a.art-card')
+    if (!link || event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+    const occurrence = Number(link.closest('[data-occurrence]').dataset.occurrence)
+    if (!cycling && !release && occurrence === selectedCursor) return
+    event.preventDefault()
+    selectOccurrence(occurrence,true,link.href)
+  })
+  controls.forEach((control,i)=>control.addEventListener('click',()=>selectStudy(i,true)))
+  gallery.addEventListener('keydown',event=>{
+    if (event.altKey || event.ctrlKey || event.metaKey) return
+    if (event.key==='ArrowRight') selectOccurrence(requestedCursor+1,true)
+    else if (event.key==='ArrowLeft') selectOccurrence(requestedCursor-1,true)
+    else if (event.key==='Home') selectStudy(0,true)
+    else if (event.key==='End') selectStudy(planes.length-1,true)
     else return
     event.preventDefault()
-    selectStudy(next, true)
   })
-  reducedMotion.addEventListener('change', () => {
-    if (reducedMotion.matches) cards.forEach(card => card.getAnimations().forEach(animation => animation.finish()))
-  })
-  for (const button of [...cards, ...controls]) button.disabled = false
-}
-
-const connectDialog = document.querySelector('[data-connect-dialog]')
-if (connectDialog && typeof connectDialog.showModal === 'function') {
-  let trigger
-  document.querySelectorAll('[data-connect]').forEach(link => link.addEventListener('click', event => {
-    event.preventDefault()
-    trigger = link
-    connectDialog.showModal()
-  }))
-  connectDialog.addEventListener('close', () => trigger?.focus({ preventScroll: true }))
-  connectDialog.addEventListener('keydown', event => {
-    if (event.key !== 'Tab') return
-    const focusable = [...connectDialog.querySelectorAll('button:not([disabled]),a[href]')]
-    const first = focusable[0], last = focusable.at(-1)
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault()
-      last.focus({ preventScroll: true })
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault()
-      first.focus({ preventScroll: true })
+  function refreshLayout() {
+    if (cancelRelease()) {
+      runSelection(requestedCursor,0)
+      return
     }
-  })
-  connectDialog.addEventListener('click', event => {
-    if (event.target !== connectDialog) return
-    const {left,right,top,bottom} = connectDialog.getBoundingClientRect()
-    if (event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom) connectDialog.close()
-  })
+    renderStudy(selected)
+    if (gesture?.tracks) {
+      gesture.tracks = prepareDrag(gesture)
+      paintDrag(gesture)
+    }
+  }
+
+  const observer = new ResizeObserver(refreshLayout)
+  observer.observe(gallery)
+  observer.observe(intro)
+  observer.observe(document.querySelector('.masthead'))
+  addEventListener('resize', refreshLayout)
+  reducedMotion.addEventListener('change', refreshLayout)
+  gallery.setAttribute('aria-busy','false')
+  renderStudy(selected)
+  document.fonts.ready.then(refreshLayout)
+  for (const button of controls) button.disabled = false
 }
