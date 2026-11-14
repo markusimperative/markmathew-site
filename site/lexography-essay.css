@@ -1,0 +1,50 @@
+.lexography-section {
+  display: grid;
+  grid-template-columns: var(--project-story-columns);
+  align-items: start;
+  gap: var(--project-story-gap) var(--layout-gap);
+  padding-block: var(--project-story-space);
+}
+
+.lexography-section:first-child { padding-block-start: calc(var(--project-opening-gap) + 16px); }
+.lexography-section + .lexography-section { border-block-start: 1px solid var(--rule); }
+.lexography-essay + .project-next { margin-top: 0; }
+
+.lexography-reading {
+  min-width: 0;
+  max-width: 62ch;
+  font-size: clamp(18px, calc(1.53 * var(--site-vw)), 22px);
+  line-height: 1.45;
+}
+.lexography-reading h2 { margin-block-end: 16px; text-wrap: balance; }
+.lexography-reading p + p { margin-block-start: .6em; }
+.lexography-reading .text-link { margin-block-start: 16px; white-space: normal; }
+
+.lexography-visuals {
+  display: grid;
+  gap: 24px;
+}
+.lexography-figure { min-width: 0; }
+.lexography-figure img { width: 100%; height: auto; }
+.lexography-figure--detail { width: 100%; max-width: 600px; }
+.lexography-figure figcaption {
+  margin-block-start: 10px;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: 1.4;
+}
+.lexography-figure figcaption a {
+  display: inline-block;
+  padding-block: 3px;
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+@media (min-width: 1100px) {
+  .lexography-section--visual-left > .lexography-reading { grid-area: 1 / 2; }
+  .lexography-section--visual-left > .lexography-figure { grid-area: 1 / 1; }
+}
+
+@media (max-width: 1099px) {
+  .lexography-figure figcaption a { padding-block: 9px; }
+}

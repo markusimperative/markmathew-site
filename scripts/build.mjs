@@ -1,7 +1,8 @@
-import { cp, mkdir, readdir, rm, stat } from 'node:fs/promises'
+import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { resolve, dirname, basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { counterEntry } from './counter-entry.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const game = resolve(root, '../the-counter')
@@ -24,4 +25,6 @@ await cp(join(root, 'site'), output, { recursive: true })
 const destination = join(output, 'experiments', 'the-counter')
 await mkdir(destination, { recursive: true })
 for (const entry of entries) await cp(join(game, 'dist', entry), join(destination, entry), { recursive: (await stat(join(game, 'dist', entry))).isDirectory() })
+const entry = join(destination, 'index.html')
+await writeFile(entry, counterEntry(await readFile(entry, 'utf8')))
 console.log('Prepared /, /experiments/, and /experiments/the-counter/. No deployment performed.')

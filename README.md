@@ -4,7 +4,13 @@ A small static website for writing and interactive experiments, hosted with Clou
 
 **[markmathew.com](https://markmathew.com/)** · **[The Counter](https://markmathew.com/experiments/the-counter/)**
 
-![The homepage](docs/preview.png)
+The editorial desktop homepage uses Newsreader and IBM Plex Sans, an interactive artwork gallery, selected projects, and a directory with hover/focus previews. [Implementation and artwork notes](docs/editorial-desktop.md).
+
+![Editorial desktop browser preview](docs/editorial-desktop-preview.jpg)
+
+[Desktop validation](docs/editorial-desktop-qa.md)
+
+The earlier homepage is preserved in [the original preview](docs/preview.png).
 
 ## Local development
 
@@ -27,9 +33,11 @@ Open `http://127.0.0.1:8787/`. The preview binds loopback and uses no remote bin
 
 To test the game itself, run `npm test` and `npm run lint` in the sibling `the-counter` folder. No credentials or account login is needed for local builds or play.
 
+The [browser test suite](tests/README.md) covers portfolio destinations, keyboard navigation, the Connect dialog, responsive layout, screenshots, and axe-core accessibility checks.
+
 ## Structure
 
-- `site/`: homepage, experiment directory, shared CSS, headers and 404 page.
+- `site/` contains the homepage, About, WIP, Experiments, Thoughts, Archive, Connect, and shared styles and assets.
 - `scripts/build.mjs`: builds the independent game for `/experiments/the-counter/` and copies only its runtime into `dist/`.
 - `scripts/check.mjs`: checks internal references, copy integrity, allowed runtime files and size limits; writes an ignored release manifest.
 - `wrangler.jsonc`: local static preview configuration.

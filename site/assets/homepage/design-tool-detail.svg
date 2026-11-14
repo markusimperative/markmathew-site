@@ -1,0 +1,21 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="680" height="606.407" viewBox="0 0 680 606.407" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Industrial-form study" clip-path="url(#clip0_0_4)">
+<path id="Vector" d="M680 0H0V606.407H680V0Z" fill="#E1E2E0"/>
+<path id="Vector_2" d="M-100.085 323.809C147.188 -103.03 612.296 -67.7056 812.469 132.468V662.338H235.499C-88.3103 603.463 -150.128 441.558 -100.085 323.809Z" fill="url(#paint0_linear_0_4)"/>
+<path id="Vector_3" opacity="0.6" d="M-47.0996 441.558C217.835 123.636 518.095 52.987 774.199 264.935M-50.0433 535.758C161.905 276.71 518.095 241.385 730.043 409.178M32.381 627.013C270.823 379.74 571.082 365.022 780.087 506.32" stroke-width="5.88745" stroke="#616569"/>
+<g id="Vector_4" opacity="0.7">
+<path d="M129.524 -32.381C191.342 191.342 341.472 347.359 680 523.983Z" fill="black"/>
+<path d="M129.524 -32.381C191.342 191.342 341.472 347.359 680 523.983" stroke-width="14.7186" stroke="#FEFEFC"/>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_4" x1="-115.489" y1="662.338" x2="524.272" y2="-219.733" gradientUnits="userSpaceOnUse">
+<stop stop-color="#494D4F"/>
+<stop offset="0.55" stop-color="#CBD1D1"/>
+<stop offset="1" stop-color="#F0F0EB"/>
+</linearGradient>
+<clipPath id="clip0_0_4">
+<rect width="680" height="606.407" fill="white"/>
+</clipPath>
+</defs>
+</svg>

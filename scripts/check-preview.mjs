@@ -5,8 +5,9 @@ import { createHash } from 'node:crypto'
 // Deliberately fixed to the loopback preview; this script never probes a public host.
 const origin = 'http://127.0.0.1:8787'
 const manifest = JSON.parse(await readFile(new URL('../release/manifest.json', import.meta.url), 'utf8'))
+const redirects = ['cosmoture', 'naraeology']
 for (const file of manifest.files) {
-  if (file.path === '_headers' || file.path === '404.html') continue
+  if (['_headers', '_redirects', '404.html', ...redirects.map(slug => 'experiments/' + slug + '/index.html')].includes(file.path)) continue
   let path = '/' + file.path
   if (path.endsWith('/index.html')) path = path.slice(0, -10)
   const response = await fetch(origin + path, { signal: AbortSignal.timeout(8000) })
@@ -16,7 +17,9 @@ for (const file of manifest.files) {
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff', path + ' headers')
   if (file.path.endsWith('.webp')) assert(response.headers.get('content-type')?.includes('image/webp'), path)
   if (file.path.endsWith('.wav')) assert(response.headers.get('content-type')?.includes('audio/'), path)
-  if (/\/assets\/.*\.(js|css)$/.test(path)) assert(response.headers.get('cache-control')?.includes('immutable'), path)
+  if (/^\/experiments\/the-counter\/assets\/.*\.(js|css)$/.test(path)) {
+    assert(response.headers.get('cache-control')?.includes('immutable'), path)
+  }
 }
 for (const path of ['/experiments', '/experiments/the-counter']) {
   const response = await fetch(origin + path + '?mode=pilot', { redirect: 'manual' })
@@ -26,7 +29,13 @@ for (const path of ['/experiments', '/experiments/the-counter']) {
 }
 const pilot = await fetch(origin + '/experiments/the-counter/?mode=pilot')
 assert.equal(pilot.status, 200)
-for (const path of ['/missing-page', '/experiments/the-counter/missing.js', '/api/shift-responses', '/pilot-responses/', '/experiments/the-counter/pilot-responses/', '/.env', '/src/App.tsx', '/_headers']) {
+for (const slug of redirects) {
+  const path = '/experiments/' + slug + '/'
+  const response = await fetch(origin + path, { redirect: 'manual' })
+  assert.equal(response.status, 301, path)
+  assert.equal(new URL(response.headers.get('location'), origin).pathname, '/wip/' + slug + '/')
+}
+for (const path of ['/missing-page', '/experiments/the-counter/missing.js', '/api/shift-responses', '/pilot-responses/', '/experiments/the-counter/pilot-responses/', '/.env', '/src/App.tsx', '/_headers', '/_redirects']) {
   const response = await fetch(origin + path)
   assert.equal(response.status, 404, path + ' should not be served')
 }
