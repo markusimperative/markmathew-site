@@ -85,12 +85,12 @@ a:focus-visible,button:focus-visible { outline: 2px solid var(--blue); outline-o
 .container { width: calc(100% - var(--gutter) * 2); max-width: var(--content-width); margin-inline: auto; }
 @media screen and (min-width: 2400px) {
   :root {
-    --ultrawide-grid-growth: calc((100vw - 2400px) * .425);
-    --shell-width: min(3000px, calc(var(--content-width) + var(--ultrawide-grid-growth)));
+    /* Open the layout gradually, with room for side gutters on wider displays. */
+    --ultrawide-grid-growth: calc((100vw - 2400px) * 1.15 / var(--site-scale));
+    --ultrawide-content-width: min(calc(92 * var(--site-vw)), calc(var(--content-width) + var(--ultrawide-grid-growth)));
   }
   :root:has(> :is(.home-page,.subpage)) { scrollbar-gutter: stable; }
-  .home-page,.about-page { --content-width: var(--shell-width); }
-  body > :is(.masthead,.footer).container { max-width: var(--shell-width); }
+  body:is(.home-page,.subpage) { --content-width: var(--ultrawide-content-width); }
 }
 .display,.title,.wordmark,.footer-wordmark { font-family: var(--font-display); color: var(--ink); font-weight: 600; font-optical-sizing: none; }
 .display,.title { min-width: 0; overflow-wrap: break-word; }

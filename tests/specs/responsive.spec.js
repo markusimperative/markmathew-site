@@ -94,6 +94,7 @@ test('portfolio header and footer share the same ultrawide rails', async ({ page
   await page.goto('/');
   await page.evaluate(() => document.fonts.ready);
   const expected = await readRails();
+  expect(expected[0][1] - expected[0][0]).toBeGreaterThan(3000);
   expect(expected[0]).toEqual(expected[1]);
   for (const path of ['/about/', '/wip/', '/wip/afterimage/', '/archive/', '/experiments/', '/connect/', '/404.html']) {
     await test.step(path, async () => {
