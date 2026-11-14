@@ -104,3 +104,40 @@ test('portfolio header and footer share the same ultrawide rails', async ({ page
     });
   }
 });
+
+test('About follows the shared margins and groups its introduction on ultrawide screens', async ({ page }) => {
+  await page.goto('/about/');
+  await page.evaluate(() => document.fonts.ready);
+  for (const width of [1100, 1912, 3440, 5120]) {
+    await test.step(width + ' pixels wide', async () => {
+      await page.setViewportSize({ width, height: 1440 });
+      const bounds = await page.evaluate(() => {
+        const edges = selector => {
+          const { left, right } = document.querySelector(selector).getBoundingClientRect();
+          return [Math.round(left), Math.round(right)];
+        };
+        return {
+          header: edges('body > header'),
+          intro: edges('.biography-intro'),
+          heading: edges('.biography-heading'),
+          portrait: edges('.biography-portrait'),
+          copy: edges('.biography-copy'),
+          conclusion: edges('.biography-conclusion-inner'),
+        };
+      });
+
+      expect(bounds.copy).toEqual(bounds.header);
+      expect(bounds.conclusion).toEqual(bounds.header);
+      const gap = bounds.portrait[0] - bounds.heading[1];
+      expect(gap).toBeGreaterThan(0);
+      if (width < 2400) {
+        expect(bounds.intro).toEqual(bounds.header);
+      } else {
+        expect(gap).toBeLessThan(300);
+        expect(bounds.portrait[1]).toBeLessThanOrEqual(bounds.intro[1]);
+        expect(bounds.intro[0] - bounds.header[0])
+          .toBeCloseTo(bounds.header[1] - bounds.intro[1], -1);
+      }
+    });
+  }
+});

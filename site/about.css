@@ -132,22 +132,17 @@
     --biography-portrait-width: calc(35 * var(--site-vw));
     /* Give the name room on compact desktops and cap the text track on wide screens. */
     --biography-left-width: clamp(845px,var(--biography-portrait-width),920px);
-    --biography-grid-width: calc(var(--biography-left-width) + var(--biography-portrait-width) + clamp(24px,calc(10.75 * var(--site-vw)),288px));
-  }
-  .biography-page .container {
-    width: calc(100% - 64px);
-    max-width: clamp(
-      var(--biography-grid-width),
-      calc(var(--biography-grid-width) + var(--ultrawide-grid-growth,0px)),
-      var(--content-width)
-    );
   }
   .biography-page {
-    --biography-columns: minmax(0,var(--biography-left-width)) minmax(24px,1fr) var(--biography-portrait-width);
     --biography-column-gap: 0px;
     padding-block-start: 24px;
     font-size: var(--text-body);
     line-height: var(--line-body);
+  }
+  .biography-intro,
+  .biography-copy,
+  .biography-conclusion-inner {
+    --biography-columns: minmax(0,var(--biography-left-width)) minmax(24px,1fr) var(--biography-portrait-width);
   }
   .biography-label {
     font-size: var(--text-small);
@@ -203,6 +198,15 @@
     margin-block-start: 0;
     /* Account for the photo's 73px left margin, which becomes right padding after the flip. */
     transform: translateX(4.37%) scaleX(-1);
+  }
+}
+
+@media screen and (min-width: 2400px) {
+  .biography-intro {
+    /* Keep the portrait and headline grouped within the wider page frame. */
+    --biography-portrait-width: min(calc(35 * var(--site-vw)), 1440px);
+    --biography-intro-gap: max(256px, calc(528px - (100vw - 2400px) * .16 / var(--site-scale)));
+    max-width: min(var(--content-width), calc(var(--biography-left-width) + var(--biography-intro-gap) + var(--biography-portrait-width)));
   }
 }
 
