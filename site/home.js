@@ -11,12 +11,13 @@ if (gallery) {
   const controls = [...gallery.querySelectorAll('[data-gallery-index]')]
   const caption = gallery.querySelector('[data-gallery-caption]')
   const projectLinks = [...caption.querySelectorAll('a')]
+  const artworkDescription = document.querySelector('#gallery-art-description')
   const frame = gallery.querySelector('.gallery-selection')
   const footer = gallery.querySelector('.gallery-footer')
+  const controlRow = footer.querySelector('.gallery-index')
   // The original reference defines the card outlines and ribbon geometry.
   const sourceFaces = planes.map(plane => JSON.parse(plane.dataset.face))
-  let selected = Math.max(0, controls.findIndex(control => control.getAttribute('aria-pressed') === 'true'))
-  let selectedCursor = selected
+  let selectedCursor = Math.max(0, controls.findIndex(control => control.getAttribute('aria-pressed') === 'true'))
   let requestedCursor = selectedCursor
   let pendingProjectHref = null
   let cycling = false
@@ -112,7 +113,7 @@ if (gallery) {
     return plane
   }
 
-  function renderStudy(index, animate = false, previousCursor = selectedCursor, settleDuration) {
+  function renderStudy(animate = false, previousCursor = selectedCursor, settleDuration) {
     const version=++layoutVersion
     const motionEnabled=animate&&settleDuration!==0&&!reducedMotion.matches
     const previousTransforms=new Map()
@@ -133,81 +134,86 @@ if (gallery) {
       const {left,right,top,bottom,height} = element.getBoundingClientRect()
       return {left:left/zoom,right:right/zoom,top:(top+scrollTop)/zoom,bottom:(bottom+scrollTop)/zoom,height:height/zoom}
     }
-    const width = gallery.clientWidth
-    const sceneWidth = Math.max(width, 640)
-    const origin = hero.offsetTop
-    const centerOffset = (width - sceneWidth) / 2
-    const desktop = width >= 1100
+    const width = gallery.getBoundingClientRect().width / zoom
+    const fraction = value => Math.min(1, Math.max(0, value))
+    // Move the controls to the outer rail only when there is room beside the artwork.
+    const wide = fraction((innerWidth - 1200) / 500) * fraction((innerHeight - 800) / 100)
+    const interpolate = (from, to) => from + (to - from) * wide
+    gallery.style.setProperty('--gallery-wide', wide)
+    gallery.classList.add('gallery--projected')
     const footerHeight = boundsOf(footer).height
-    // The link uses the space under the desktop lead. On narrow screens, keep the gallery below it.
-    const copyBottom = boundsOf(desktop ? lead : intro).bottom
-    // Reserve the whole composition, including its caption and controls.
-    // At normal desktop heights it fits one viewport; short windows retain
-    // enough room for the fixed-size introduction instead of clipping the UI.
-    let sceneHeight = desktop ? Math.max(viewportHeight, copyBottom + 400) : viewportHeight
-    let scale = desktop ? Math.min(sceneWidth / 1672, sceneHeight / 940) : sceneWidth / 1672
-    if (desktop && width < 1600) {
-      const titleBottom=boundsOf(intro.querySelector('h1')).bottom
-      scale=Math.min(scale,(sceneHeight-titleBottom-footerHeight-34)/732)
-    }
-    const extraWidth = desktop ? sceneWidth - 1672 * scale : 0
-    let offsetY = desktop ? Math.max(0, sceneHeight - 940 * scale) : Math.max(0, copyBottom + 32 - 154 * scale)
-    if (!desktop) sceneHeight = Math.max(viewportHeight, 940 * scale + offsetY)
-    const fontSize = Math.max(16, Math.min(24,20*scale))
-    const lineHeight = fontSize*1.4
-    const labelPadding = Math.max(12,Math.min(32,16*scale))
-    const bottomSpace = width < 700 ? 24 : 44*scale
-    const frameWidth = frameWidthNative*scale
-    const frameBottomAt = y => Math.max(862*scale+y,817*scale+y+lineHeight+labelPadding)
-    let clearance=0
-    // Solve text clearance and the footer together. Wide selections must not
-    // put the neutral frame or caption underneath the numeric controls.
-    for (let pass=0; pass<2; pass++) {
-      clearance=0
-      if (desktop) {
-        // Use every possible selected face to reserve one stable frame position.
-        const faces=sourceFaces.map((face,i)=>{
-          const factor=Math.min(655/dimensions[i].height,selectedWidthLimit/dimensions[i].width)
-          const xOrigin=803.5-dimensions[i].width*factor/2
-          const yOrigin=809-dimensions[i].height*factor
-          return face.map(([x,y])=>[(xOrigin+x*factor)*scale+centerOffset+extraWidth/2,(yOrigin+y*factor)*scale+offsetY])
-        })
-        for (const line of introLines) {
-          const bounds=boundsOf(line)
-          if (bounds.bottom>174*scale+offsetY && bounds.top<862*scale+offsetY) {
-            clearance=Math.max(clearance,bounds.right+24-(frameLeftNative*scale+centerOffset+extraWidth/2))
-          }
-          for (const y of [bounds.top+2,bounds.bottom-2]) {
-            for (const face of faces) clearance=Math.max(clearance,bounds.right+16-leftEdgeAtY(face,y))
-          }
+    const controlsWidth = controlRow.getBoundingClientRect().width / zoom
+    const naturalScale = Math.max(width, 640) / 1672
+    const lowestScale = Math.min(naturalScale, .25 / zoom)
+    const compactFont = 16 / zoom
+    const compactLabelPadding = 10 / zoom
+    const compactControlsGap = 6 / zoom
+    const compactBottomSpace = 16 / zoom
+    const firstArtworkTop = Math.min(...slotTops)
+    const compactTop = boundsOf(intro).bottom + 16 / zoom
+    const frameBudget = viewportHeight - compactTop - compactControlsGap - footerHeight - compactBottomSpace
+    // Fit the entire caption and control row before spending the remaining height on art.
+    const compactScale = Math.max(lowestScale, Math.min(
+      naturalScale,
+      frameBudget / (862 - firstArtworkTop),
+      (frameBudget - compactFont * 1.4 - compactLabelPadding) / (817 - firstArtworkTop)
+    ))
+    const wideHeight = Math.max(viewportHeight, boundsOf(lead).bottom + 400)
+    const wideScale = Math.min(naturalScale, wideHeight / 940)
+    const scale = interpolate(compactScale, wideScale)
+    const offsetY = interpolate(compactTop - firstArtworkTop * compactScale, Math.max(0, wideHeight - 940 * wideScale))
+    const fontSize = interpolate(compactFont, Math.max(16, Math.min(24, 20 * wideScale)))
+    const lineHeight = fontSize * 1.4
+    const labelPadding = interpolate(compactLabelPadding, Math.max(12, Math.min(32, 16 * wideScale)))
+    const frameWidth = frameWidthNative * scale
+    const frameTop = 174 * scale + offsetY
+    const frameBottom = offsetY + Math.max(862 * scale, 817 * scale + lineHeight + labelPadding)
+    const footerTop = Math.max(
+      frameBottom + interpolate(compactControlsGap, 0),
+      interpolate(frameBottom, wideHeight - 44 * wideScale - footerHeight)
+    )
+    const sceneHeight = Math.max(viewportHeight, footerTop + footerHeight + compactBottomSpace)
+    const copyLines = wide > 0 ? [...introLines].map(boundsOf) : []
+    const centeredOrigin = width / 2 - (frameLeftNative + frameWidthNative / 2) * scale
+    const baseOrigin = interpolate(centeredOrigin, (width - 1672 * scale) / 2)
+    let clearance = 0
+    if (copyLines.length) {
+      // Reserve space for every selected face so changing the study never moves the frame.
+      const faces = sourceFaces.map((face, i) => {
+        const factor = Math.min(655 / dimensions[i].height, selectedWidthLimit / dimensions[i].width)
+        const xOrigin = 803.5 - dimensions[i].width * factor / 2
+        const yOrigin = 809 - dimensions[i].height * factor
+        return face.map(([x, y]) => [(xOrigin + x * factor) * scale + baseOrigin, (yOrigin + y * factor) * scale + offsetY])
+      })
+      for (const bounds of copyLines) {
+        if (bounds.bottom > frameTop && bounds.top < frameBottom) {
+          clearance = Math.max(clearance, bounds.right + 24 - (frameLeftNative * scale + baseOrigin))
         }
-        const frameRight=frameLeftNative*scale+centerOffset+extraWidth/2+clearance+frameWidth
-        const indexLeft=boundsOf(gallery.querySelector('.gallery-index')).left
-        if (frameRight>indexLeft-16) {
-          offsetY-=Math.max(0,frameBottomAt(offsetY)-(sceneHeight-bottomSpace-footerHeight-16))
+        for (const y of [bounds.top + 2, bounds.bottom - 2]) {
+          for (const face of faces) clearance = Math.max(clearance, bounds.right + 16 - leftEdgeAtY(face, y))
         }
       }
     }
-    const navBottom=boundsOf(document.querySelector('.main-nav')).bottom
-    const copyLines = desktop ? [...introLines].map(boundsOf) : []
-    hero.style.setProperty('--scene-header-height', `${origin}px`)
-    hero.style.setProperty('--scene-offset-y', `${offsetY}px`)
-    hero.style.setProperty('--scene-excess-x', `${extraWidth}px`)
-    hero.style.setProperty('--scene-bottom', `${bottomSpace}px`)
-    gallery.classList.add('gallery--projected')
-    const originX=centerOffset+extraWidth/2+clearance
+    const originX = baseOrigin + clearance
+    const navBottom = boundsOf(document.querySelector('.main-nav')).bottom
+    const frameLeft = frameLeftNative * scale + originX
+    const centeredControlsRight = frameLeft + (frameWidth + controlsWidth) / 2
+    const controlsInset = Math.max(0, boundsOf(footer).right - centeredControlsRight)
+    gallery.style.setProperty('--gallery-controls-top', `${footerTop}px`)
+    gallery.style.setProperty('--gallery-controls-inset', `${interpolate(controlsInset, 0)}px`)
+    hero.style.setProperty('--scene-header-height', `${hero.offsetTop}px`)
     const existing=[...instances.keys()]
     const poses=ribbonPoses(selectedCursor,scale,originX,width,Math.min(...existing),Math.max(...existing))
     const occurrences=[...poses.keys()]
     const previousPoses=motionEnabled?ribbonPoses(previousCursor,scale,originX,width,Math.min(...occurrences),Math.max(...occurrences)):new Map()
     const overscan=Math.max(240,360*scale)
-    const footerTop=sceneHeight-bottomSpace-footerHeight
     function project(pose) {
       const x=pose.x*scale+originX
       const cardWidth=pose.width*scale,cardHeight=pose.height*scale
-      let y=desktop&&pose.slot>=4?Math.max(pose.y*scale+offsetY,navBottom+16):pose.y*scale+offsetY
-      if (desktop&&pose.slot<=0) y=Math.min(y,footerTop-16-cardHeight)
-      if (desktop&&pose.slot<2) {
+      let y = pose.y * scale + offsetY
+      if (pose.slot >= 4) y = interpolate(y, Math.max(y, navBottom + 16))
+      if (pose.slot <= 0) y = interpolate(y, Math.min(y, footerTop - 16 - cardHeight))
+      if (wide > 0 && pose.slot < 2) {
         for (const bounds of copyLines) {
           const top=bounds.top-16,bottom=bounds.bottom+16
           const face=sourceFaces[pose.study].map(([px,py])=>[x+px*pose.factor*scale,y+py*pose.factor*scale])
@@ -233,17 +239,8 @@ if (gallery) {
         moving.push({plane,from,to:position})
       } else plane.style.transform=position.transform
     }
-    controls.forEach((control,i)=>{
-      control.setAttribute('aria-pressed',String(i===index))
-      control.tabIndex=i===index?0:-1
-    })
-    const frameLeft = frameLeftNative*scale + centerOffset + extraWidth/2 + clearance
-    const frameTop = 174*scale + offsetY
-    const frameBottom = frameBottomAt(offsetY)
     Object.assign(frame.style, {left:`${frameLeft}px`,top:`${frameTop}px`,width:`${frameWidth}px`,height:`${frameBottom-frameTop}px`})
     Object.assign(caption.style, {left:`${frameLeft}px`,top:`${frameBottom-labelPadding-lineHeight}px`,width:`${frameWidth}px`,fontSize:`${fontSize}px`,lineHeight:`${lineHeight}px`})
-    projectLinks.forEach((link,i) => link.toggleAttribute('hidden', i !== index))
-    if (width < 700) sceneHeight = Math.max(sceneHeight,frameBottom+24+footerHeight+24)
     hero.style.setProperty('--scene-height', `${sceneHeight}px`)
     function prune() {
       if (version!==layoutVersion) return
@@ -274,19 +271,26 @@ if (gallery) {
     plane.style.transform=`translate(${x}px,${y}px) scale(${factor})`
   }
 
+  function updateSelection(cursor) {
+    const index = studyAt(cursor)
+    controls.forEach((control,i) => {
+      control.setAttribute('aria-pressed', String(i === index))
+      control.tabIndex = i === index ? 0 : -1
+    })
+    artworkDescription.textContent = planes[index].querySelector('img').alt
+    projectLinks.forEach((link,i) => link.toggleAttribute('hidden', i !== index))
+  }
+
   function runSelection(nextCursor, settleDuration) {
     const previousCursor=selectedCursor
     selectedCursor=nextCursor
-    selected=studyAt(selectedCursor)
     cycling=true
-    gallery.setAttribute('aria-busy','true')
-    renderStudy(selected,true,previousCursor,settleDuration).then(()=>{
+    renderStudy(true,previousCursor,settleDuration).then(()=>{
       cycling=false
       if (requestedCursor!==selectedCursor) {
         runSelection(requestedCursor)
         return
       }
-      gallery.setAttribute('aria-busy','false')
       if (pendingProjectHref) {
         const href = pendingProjectHref
         pendingProjectHref = null
@@ -300,6 +304,8 @@ if (gallery) {
     const interrupted = cancelRelease()
     requestedCursor=cursor
     pendingProjectHref=projectHref
+    // Keep focus and its destination in sync even while artwork is still moving.
+    updateSelection(cursor)
     if (moveFocus) controls[studyAt(cursor)].focus({preventScroll:true})
     if (!cycling&&(interrupted||requestedCursor!==selectedCursor)) runSelection(requestedCursor)
   }
@@ -466,11 +472,14 @@ if (gallery) {
     const remaining = Math.abs(offset-destination)
     const duration = remaining < 1 ? 0 : Math.min(345,125+remaining/(.85+Math.abs(velocity)))
     pendingProjectHref = null
-    if (reducedMotion.matches || duration === 0) {
+    const settleSelection = () => {
+      updateSelection(requestedCursor)
       runSelection(requestedCursor,0)
+    }
+    if (reducedMotion.matches || duration === 0) {
+      settleSelection()
       return
     }
-    gallery.setAttribute('aria-busy','true')
     const settling = {drag,offset}
     release = settling
     settling.transition = tween({
@@ -483,7 +492,7 @@ if (gallery) {
     settling.transition.finished.then(() => {
       if (release !== settling) return
       release = undefined
-      runSelection(requestedCursor,0)
+      settleSelection()
     })
   }
 
@@ -519,10 +528,11 @@ if (gallery) {
   })
   function refreshLayout() {
     if (cancelRelease()) {
+      updateSelection(requestedCursor)
       runSelection(requestedCursor,0)
       return
     }
-    renderStudy(selected)
+    renderStudy()
     if (gesture?.tracks) {
       gesture.tracks = prepareDrag(gesture)
       paintDrag(gesture)
@@ -535,8 +545,10 @@ if (gallery) {
   observer.observe(document.querySelector('.masthead'))
   addEventListener('resize', refreshLayout)
   reducedMotion.addEventListener('change', refreshLayout)
-  gallery.setAttribute('aria-busy','false')
-  renderStudy(selected)
+  // The controls and caption provide one accessible route through the repeated artwork.
+  stage.setAttribute('aria-hidden','true')
+  updateSelection(selectedCursor)
+  renderStudy()
   document.fonts.ready.then(refreshLayout)
   for (const button of controls) button.disabled = false
 }

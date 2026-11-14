@@ -33,9 +33,11 @@ Open `http://127.0.0.1:8787/`. The preview binds loopback and uses no remote bin
 
 To test the game itself, run `npm test` and `npm run lint` in the sibling `the-counter` folder. No credentials or account login is needed for local builds or play.
 
+The [browser test suite](tests/README.md) covers portfolio destinations, keyboard navigation, the Connect dialog, responsive layout, screenshots, and axe-core accessibility checks.
+
 ## Structure
 
-- `site/`: homepage, About and study previews, public-profile Connect page, experiment directory, headers and 404 page. The homepage uses `home.css`/`home.js`; the existing experiment pages retain `site.css`.
+- `site/` contains the homepage, About, WIP, Experiments, Thoughts, Archive, Connect, and shared styles and assets.
 - `scripts/build.mjs`: builds the independent game for `/experiments/the-counter/` and copies only its runtime into `dist/`.
 - `scripts/check.mjs`: checks internal references, copy integrity, allowed runtime files and size limits; writes an ignored release manifest.
 - `wrangler.jsonc`: local static preview configuration.

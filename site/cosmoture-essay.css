@@ -231,7 +231,7 @@
   }
 }
 
-@media (min-width: 375px) and (max-width: 699px) {
+@media (min-width: 450px) and (max-width: 699px) {
   .cosmoture-heading {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;

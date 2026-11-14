@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { readdir, readFile, stat, mkdir, writeFile } from 'node:fs/promises'
 import { resolve, dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { counterEntry } from './counter-entry.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = join(root, 'dist')
@@ -65,8 +66,9 @@ for (const file of files.filter(file => /\.(html|css)$/.test(file))) {
 }
 const html = await readFile(join(dist, base.slice(1), 'index.html'), 'utf8')
 const bundledReferences = [...html.matchAll(/(?:href|src)=["']([^"']+)["']/g)].map(match => match[1])
-assert(bundledReferences.length >= 3, 'Missing game entry assets')
-assert(bundledReferences.every(path => path.startsWith(base)), 'Game entry points escape its subdirectory')
+assert(bundledReferences.filter(path => path.startsWith(base)).length >= 3, 'Missing game entry assets')
+assert(bundledReferences.every(path => path.startsWith(base) || path === 'https://markmathew.com' + base),
+  'Game entry points escape its subdirectory')
 const js = files.filter(file => file.startsWith(base.slice(1) + 'assets/') && file.endsWith('.js'))
 assert(js.length > 0, 'Missing compiled application')
 const compiled = (await Promise.all(js.map(file => readFile(join(dist, file), 'utf8')))).join('\n')
@@ -79,7 +81,8 @@ for (const file of files.sort()) {
   const buffer = await readFile(path)
   if (file.startsWith(base.slice(1))) {
     const source = await readFile(join(game, file.slice(base.length - 1)))
-    assert(buffer.equals(source), `Copied runtime differs from independent game build: ${file}`)
+    const expected = file === base.slice(1) + 'index.html' ? Buffer.from(counterEntry(source.toString('utf8'))) : source
+    assert(buffer.equals(expected), `Copied runtime differs from independent game build: ${file}`)
   }
   assert((await stat(path)).size <= 25 * 1024 * 1024, `Asset exceeds 25 MiB: ${file}`)
   manifest.push({ path: file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex') })

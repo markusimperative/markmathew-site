@@ -134,8 +134,7 @@
     --biography-left-width: clamp(845px,var(--biography-portrait-width),920px);
     --biography-grid-width: calc(var(--biography-left-width) + var(--biography-portrait-width) + clamp(24px,calc(10.75 * var(--site-vw)),288px));
   }
-  .biography-page .container,
-  .about-page .subpage-footer {
+  .biography-page .container {
     width: calc(100% - 64px);
     max-width: clamp(
       var(--biography-grid-width),
